@@ -1,23 +1,37 @@
 
 import React, { Component } from 'react';
-import { StyleSheet } from 'react-native';
-import { Container, Header, Content, Card, CardItem, Text, Body } from "native-base";
-
+import { StyleSheet, Linking, WebView, Button, View, ScrollView, Text, FlatList, ActivityIndicator, TouchableOpacity } from 'react-native';
+// import { Container, Header, Content, Card, CardItem, Text, Body,ScrollView, Thumbnail } from "native-base";
+console.disableYellowBox = true
 
 
 export default class App extends Component {
 
-  state = {
-    news: [],
-    newsFeed: []
-  };
+  // static navigationOptions = {
+  //   header: "your news feed",
+  // };
+
+
+
+
+  constructor() {
+    super()
+    this.state = {
+      news: [],
+      newsFeed: [],
+      loading: true,
+      amount: 20,
+
+    }
+
+  }
   componentWillMount() {
     const axios = require('axios');
     axios.get('https://hacker-news.firebaseio.com/v0/topstories.json')
       .then(response => {
         console.log("respose:" + response);
         const news = [];
-        for (let i = 0; i < 10; i++) {
+        for (let i = 0; i < 20; i++) {
           news.push(response.data[i]);
         }
 
@@ -31,9 +45,11 @@ export default class App extends Component {
               const newsFeed = res.data;
               console.log("response:" + res)
               console.log("newsFeed" + newsFeed);
-              this.setState({ newsFeed });
+              this.setState({
+                loading: false,
+                newsFeed: [...this.state.newsFeed, newsFeed]
 
-
+              });
 
             })
             .catch(function (error) {
@@ -41,8 +57,6 @@ export default class App extends Component {
               console.log(error);
             })
         }
-
-
       })
 
       .catch(function (error) {
@@ -50,43 +64,60 @@ export default class App extends Component {
         console.log(error);
       })
 
-
-
   }
 
-  renderNews() {
-    return this.state.newsFeed.map((data) => {
-      return (
-        <View><Text>{this.data}</Text></View>
-      )
-    })
+
+  renderFeeds() {
+    return (
+      <View style={styles.mainContainer}>
+        <View   >
+          <FlatList
+            data={this.state.newsFeed}
+            renderItem={this.renderItem}
+          />
+        </View>
+      </View>
+    )
   }
+
+  handleClick = (item) => {
+    const data = item.url;
+
+    return (
+      Linking.openURL(data)
+    );
+  }
+
+  renderItem = ({ item }) => {
+    return (
+      <TouchableOpacity
+        onPress={() => this.handleClick(item)}>
+        <View>
+          <Text>{item.title}</Text>
+        </View>
+      </TouchableOpacity>
+    )
+  }
+
   render() {
     return (
-      // <View style={styles.container}>
-      // <Image resizeMode = 'cover' style={styles.imageProp}
-      // source={require('./src/images/news_image.png')}/>
-      //   </View>
-      <Container>
-        <Header />
-        <Content padder>
-          <Card>
-            <CardItem header button onPress={() => alert("news")}>
-              <Text>{this.state.newsFeed.length > 0 ?  this.renderNews() : <Text>' error loading the data'</Text>}</Text>
-            </CardItem>
-          </Card>
-        </Content>
-      </Container>
-
+      this.state.loading // While fetching data show indicator
+        ?
+        <View style={styles.spinnerContainer}>
+          <ActivityIndicator size="large" />
+        </View>
+        :
+        <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: "gery", flex: 1, paddingRight: 30, paddingLeft: 30 }}>
+          {this.state.newsFeed.length > 0 ? this.renderFeeds() : <Text>' we are loading the data'</Text>}
+        </View>
     );
   }
 }
 
+
 const styles = StyleSheet.create({
-  container: {
-    // flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+  mainContainer: {
+    flex: 1
   },
 
   instructions: {
@@ -99,5 +130,10 @@ const styles = StyleSheet.create({
     height: 200,
 
     paddingTop: 20,
+  },
+  spinnerContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center"
   }
 });
